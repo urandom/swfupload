@@ -19,9 +19,10 @@ sub install_share {
 	}
 
 	$self->postamble(<<"END_MAKEFILE");
+INST_AUTODIR2   = \$(INST_LIB)/auto/IWL
 config ::
 \t\$(NOECHO) \$(MOD_INSTALL) \\
-\t\t"$dir" \$(INST_AUTODIR)
+\t\t"$dir" \$(INST_AUTODIR2)
 
 END_MAKEFILE
 
