@@ -5,14 +5,16 @@ package IWL::SWFUpload;
 
 use strict;
 
-use base 'IWL::Button';
+use base 'IWL::Container';
 
+use IWL::Button;
 use IWL::JSON 'toJSON';
+use IWL::String 'randomize';
 use IWL::Config '%IWLConfig';
 
 use vars qw($VERSION);
 
-use Locale::TextDomain qw(org.bloka.iwl);
+use Locale::TextDomain qw(org.bloka.iwl.swfupload);
 
 $VERSION = '0.1';
 
@@ -42,11 +44,25 @@ Where B<%ARGS> is an optional hash parameter with with key-values.
 
 If true, the invoked file selector can pick multiple files. Defaults to I<false>
 
-=item B<bindToSignal> => B<NAME>
+=item B<autoUpload>
 
-Binds the button to invoke the file selector when the given signal is emitted. Defaults to I<click>
+If true, file uploading starts as soon as the files are selected. An upload and stop buttons are never placed on the page.
 
 =back
+
+The object has the following public properties
+
+=item B<browse>
+
+A browse button, of class L<IWL::Button>. When pressed, it invokes the browser file selector.
+
+=item B<upload>
+
+An upload button, of class L<IWL::Button>. Before the upload button starts, it's action is to start it.
+
+=item B<stop>
+
+A stop upload button, of class L<IWL::Button>. After the upload start, this button can abort the process.
 
 =cut
 
@@ -87,21 +103,6 @@ Returns true if the file selector can pick multiple files
 
 sub isMultiple {
     return shift->{_uploadOptions}{multiple};
-}
-
-=item B<bindToSignal> (B<SIGNAL>)
-
-Binds the file selection to a button signal. See L<IWL::Button> for supported signals.
-
-Parameters: B<SIGNAL> - the signal to bind to
-
-=cut
-
-sub bindToSignal {
-    my ($self, $signal) = @_;
-
-    $self->{_uploadOptions}{bindToSignal} = $signal;
-    return $self;
 }
 
 =item B<setUploadURL> (B<URL>)
@@ -266,32 +267,69 @@ sub getFileQueueLimit {
 # Protected
 #
 sub _realize {
-    my $self   = shift;
-    my $id     = $self->getId;
+    my $self  = shift;
+    my $id    = $self->getId;
+    my $class = $self->{_defaultClass};
 
     $self->SUPER::_realize;
-    $self->signalConnect($self->{_uploadOptions}{bindToSignal} =>
-          'this.control.' . (
+    $self->{browse}->signalConnect(click =>
+          'this.parentNode.control.' . (
             $self->{_uploadOptions}{multiple} ? 'selectFiles' : 'selectFile'
           ) . '()');
 
     my $options = toJSON($self->{__SWFOptions});
-    $self->_appendInitScript("\$('$id').control = new SWFUpload($options)");
+    $self->_appendInitScript("var swfu = \$('$id'); swfu.control = new SWFUpload($options);");
+    $self->_appendInitScript("swfu.browse = swfu.select('.${class}_browse')[0]");
+
+    unless ($self->{_options}{autoUpload}) {
+        $self->{stop}->setStyle(display => 'none');
+        $self->appendChild($self->{upload});
+        $self->appendChild($self->{stop});
+
+        $self->_appendInitScript("swfu.upload = swfu.select('.${class}_upload')[0]");
+        $self->_appendInitScript("swfu.stop = swfu.select('.${class}_stop')[0]");
+        $self->{upload}->signalConnect(click => '$(this).up().control.startUpload(); this.hide(); this.up().stop.show()');
+        $self->{stop}->signalConnect(click => '$(this).up().control.stopUpload(); this.hide(); this.up().upload.show()');
+    }
+# XXX Convert these into signals by creating a wrapper swfupload.js script in share/jscript
+    $self->_appendInitScript("swfu.control.fileQueueError_handler = function() {IWL.Status.display(arguments[2])};");
+    $self->_appendInitScript("swfu.control.uploadComplete_handler = function() {this.startUpload()};");
+}
+
+sub _setupDefaultClass {
+    my $self = shift;
+    $self->prependClass($self->{_defaultClass});
+    $self->{browse}->prependClass($self->{_defaultClass} . '_browse');
+    $self->{upload}->prependClass($self->{_defaultClass} . '_upload');
+    $self->{stop}->prependClass($self->{_defaultClass} . '_stop');
 }
 
 # Internal
 #
 $init = sub {
     my ($self, %args) = @_;
+    my $browse = IWL::Button->new;
+    my $upload = IWL::Button->new;
+    my $stop   = IWL::Button->new;
     
     $self->{_uploadOptions} = {};
     $self->{_uploadOptions}{multiple}     = $args{multiple} ? 1 : 0;
-    $self->{_uploadOptions}{bindToSignal} = $args{bindToSignal} || 'click';
-    delete @args{qw(multiple bindToSignal)};
+    $self->{_uploadOptions}{autoUpload}   = $args{autoUpload} ? 1 : 0;
+    delete @args{qw(multiple autoUpload)};
+
+    $browse->setLabel(__"Browse ...");
+    $upload->setLabel(__"Upload");
+    $stop->setLabel(__"Stop uploading");
+    $self->{browse} = $browse;
+    $self->{upload} = $upload;
+    $self->{stop}   = $stop;
+    $self->appendChild($browse);
+    $self->{_defaultClass} = 'swfupload';
+    $args{id} ||= randomize($self->{_defaultClass});
 
     $self->{__SWFOptions} = {flash_url => $IWLConfig{JS_DIR} . '/dist/swfupload_f9.swf'};
-    $self->setLabel(__ "Browse ...");
     $self->requiredJs('base.js', 'dist/swfupload.js');
+    $self->_constructorArguments(%args);
 
     return $self;
 };
