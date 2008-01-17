@@ -64,6 +64,53 @@ An upload button, of class L<IWL::Button>. Before the upload button starts, it's
 
 A stop upload button, of class L<IWL::Button>. After the upload start, this button can abort the process.
 
+=head1 SIGNALS
+
+=over 4
+
+=item B<load>
+
+Fires when the widget is loaded.
+
+=item B<file_dialog_start>
+
+Fires immediately before the file selector is displayed. Due to the blocking nature of the file selector, the callback might not be executed until the selector is closed.
+
+=item B<file_queue>
+
+Fires when a file is queued. Receives the file object as a second parameter
+
+=item B<file_queue_error>
+
+Fires when an error has occurred while queueing a file. It received the file object, error code and error message as parameters, starting from the second parameters
+
+=item B<file_dialog_complete>
+
+Fires when the file selector is closed, and all the selected files have been processed. It received the number of selected files as a second parameter.
+
+=item B<upload_start>
+
+Fires just before the file is uploaded. It receives the file object as a second parameter.
+
+=item B<upload_progress>
+
+Fires periodically to indicate the upload process. It received the file object, the uploaded bytes, and the total byte count as parameters, starting from the second parameter.
+A bug in the Linux Flash Player might prevent this signal from firing more than once.
+
+=item B<upload_error>
+
+Fires when an upload does not complete successfully, or by stopping/cancelling the upload. It receives the file object, error code and error message as parameters, starting from the second parameter.
+
+=item B<upload_success>
+
+Fires when the upload has been completed successfully. Receives the file object and any data returned from the server as parameters, starting from the second parameter.
+
+=item B<upload_complete>
+
+Fires at the end of the upload cycle. When fired, the upload will be fully completed, so that another may start. Receives the file object as a second parameter.
+
+=back
+
 =cut
 
 sub new {
@@ -91,7 +138,7 @@ Parameters: B<BOOL> - if true, the selector can pick multiple files.
 sub setMultiple {
     my ($self, $bool) = @_;
 
-    $self->{_uploadOptions}{multiple} = !(!$bool);
+    $self->{_options}{multiple} = !(!$bool);
     return $self;
 }
 
@@ -102,7 +149,7 @@ Returns true if the file selector can pick multiple files
 =cut
 
 sub isMultiple {
-    return shift->{_uploadOptions}{multiple};
+    return shift->{_options}{multiple};
 }
 
 =item B<setUploadURL> (B<URL>)
@@ -272,28 +319,16 @@ sub _realize {
     my $class = $self->{_defaultClass};
 
     $self->SUPER::_realize;
-    $self->{browse}->signalConnect(click =>
-          'this.parentNode.control.' . (
-            $self->{_uploadOptions}{multiple} ? 'selectFiles' : 'selectFile'
-          ) . '()');
 
-    my $options = toJSON($self->{__SWFOptions});
-    $self->_appendInitScript("var swfu = \$('$id'); swfu.control = new SWFUpload($options);");
-    $self->_appendInitScript("swfu.browse = swfu.select('.${class}_browse')[0]");
+    my $swfoptions = toJSON($self->{__SWFOptions});
+    my $options = toJSON($self->{_options});
+    $self->_appendInitScript("IWL.SWFUpload.create('$id', $swfoptions, $options)");
 
     unless ($self->{_options}{autoUpload}) {
         $self->{stop}->setStyle(display => 'none');
         $self->appendChild($self->{upload});
         $self->appendChild($self->{stop});
-
-        $self->_appendInitScript("swfu.upload = swfu.select('.${class}_upload')[0]");
-        $self->_appendInitScript("swfu.stop = swfu.select('.${class}_stop')[0]");
-        $self->{upload}->signalConnect(click => '$(this).up().control.startUpload(); this.hide(); this.up().stop.show()');
-        $self->{stop}->signalConnect(click => '$(this).up().control.stopUpload(); this.hide(); this.up().upload.show()');
     }
-# XXX Convert these into signals by creating a wrapper swfupload.js script in share/jscript
-    $self->_appendInitScript("swfu.control.fileQueueError_handler = function() {IWL.Status.display(arguments[2])};");
-    $self->_appendInitScript("swfu.control.uploadComplete_handler = function() {this.startUpload()};");
 }
 
 sub _setupDefaultClass {
@@ -312,9 +347,9 @@ $init = sub {
     my $upload = IWL::Button->new;
     my $stop   = IWL::Button->new;
     
-    $self->{_uploadOptions} = {};
-    $self->{_uploadOptions}{multiple}     = $args{multiple} ? 1 : 0;
-    $self->{_uploadOptions}{autoUpload}   = $args{autoUpload} ? 1 : 0;
+    $self->{_options} = {};
+    $self->{_options}{multiple}     = $args{multiple} ? 1 : 0;
+    $self->{_options}{autoUpload}   = $args{autoUpload} ? 1 : 0;
     delete @args{qw(multiple autoUpload)};
 
     $browse->setLabel(__"Browse ...");
@@ -328,8 +363,20 @@ $init = sub {
     $args{id} ||= randomize($self->{_defaultClass});
 
     $self->{__SWFOptions} = {flash_url => $IWLConfig{JS_DIR} . '/dist/swfupload_f9.swf'};
-    $self->requiredJs('base.js', 'dist/swfupload.js');
+    $self->requiredJs('base.js', 'dist/swfupload.js', 'swfupload.js');
     $self->_constructorArguments(%args);
+    $self->{_customSignals} = {
+        load => [],
+        file_dialog_start => [],
+        file_queue => [],
+        file_queue_error => [],
+        file_dialog_complete => [],
+        upload_start => [],
+        upload_progress => [],
+        upload_error => [],
+        upload_success => [],
+        upload_complete => [],
+    };
 
     return $self;
 };
