@@ -83,3 +83,28 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
         }
     }
 })());
+
+/**
+ * @class IWL.SWFUpload.Queue is a class for creating a queue for the flash upload widgets
+ * @extends IWL.Widget
+ * */
+IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () {
+    return {
+        /**
+         * Adds a file to the queue
+         * @param file An swfupload file object
+         * @returns The object
+         * */
+        addFile: function(file) {
+            return this;
+        },
+
+        _init: function (id, upload) {
+            this.options = Object.extend({
+                order: ['name', 'status', 'remove']
+            }, arguments[2] || {});
+            if (Object.isString(this.options.order))
+                this.options.order = this.options.order.evalJSON(1);
+        }
+    }
+})());

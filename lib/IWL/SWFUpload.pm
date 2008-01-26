@@ -50,7 +50,11 @@ If true, file uploading starts as soon as the files are selected. An upload and 
 
 =back
 
+=head1 PROPERTIES 
+
 The object has the following public properties
+
+=over 4
 
 =item B<browse>
 
@@ -63,6 +67,8 @@ An upload button, of class L<IWL::Button>. Before the upload button starts, it's
 =item B<stop>
 
 A stop upload button, of class L<IWL::Button>. After the upload start, this button can abort the process.
+
+=back
 
 =head1 SIGNALS
 
@@ -116,7 +122,7 @@ Fires at the end of the upload cycle. When fired, the upload will be fully compl
 sub new {
     my ($proto, %args) = @_;
     my $class = ref($proto) || $proto;
-    my $self  = $class->SUPER::new(%args);
+    my $self  = $class->SUPER::new;
 
     $init->($self, %args);
 
@@ -316,7 +322,6 @@ sub getFileQueueLimit {
 sub _realize {
     my $self  = shift;
     my $id    = $self->getId;
-    my $class = $self->{_defaultClass};
 
     $self->SUPER::_realize;
     return $self->_pushFatalError(__"SWFUpload: Upload URL not set!") unless $self->getUploadURL;
