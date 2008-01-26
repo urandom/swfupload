@@ -7,7 +7,11 @@ use strict;
 
 use base 'IWL::Tree';
 
+use IWL::Tree::Row;
 use IWL::ProgressBar;
+
+use IWL::JSON 'toJSON';
+use IWL::String 'randomize';
 
 use Locale::TextDomain qw(org.bloka.iwl.swfupload);
 
@@ -69,8 +73,6 @@ If true, will show the queue header
 
 =back
 
-=back
-
 =cut
 
 sub new {
@@ -116,6 +118,15 @@ sub _realize {
     my $options = toJSON($self->{_options});
     $self->_appendInitScript("IWL.SWFUpload.Queue.create('$id', \$('$self->{__upload}'), $options)");
     $self->{__header}->setStyle(display => 'none') unless $self->{_options}{showHeader};
+    foreach my $column (@{$self->{_options}{order}}) {
+        if ($column eq 'name') {
+            $self->{__header}->appendTextHeaderCell(__"Name");
+        } elsif ($column eq 'status') {
+            $self->{__header}->appendTextHeaderCell(__"Status");
+        } else {
+            $self->{__header}->appendHeaderCell;
+        }
+    }
 }
 
 # Internal
@@ -129,7 +140,7 @@ $init = sub {
     $self->{_options}{showHeader} = $args{showHeader} ? 1 : 0;
     delete @args{qw(order showHeader)};
 
-    $self->{_defaultClass} = 'swfupload_queue';
+    $self->appendClass('swfupload_queue');
     $args{id} ||= randomize($self->{_defaultClass});
 
     $self->{__header} = $header;
