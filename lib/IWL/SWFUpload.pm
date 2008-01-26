@@ -319,6 +319,7 @@ sub _realize {
     my $class = $self->{_defaultClass};
 
     $self->SUPER::_realize;
+    return $self->_pushFatalError(__"SWFUpload: Upload URL not set!") unless $self->getUploadURL;
 
     my $swfoptions = toJSON($self->{__SWFOptions});
     my $options = toJSON($self->{_options});
@@ -353,7 +354,7 @@ $init = sub {
     delete @args{qw(multiple autoUpload)};
 
     $browse->setLabel(__"Browse ...");
-    $upload->setLabel(__"Upload");
+    $upload->setLabel(__"Upload")->setDisabled(1);
     $stop->setLabel(__"Stop uploading");
     $self->{browse} = $browse;
     $self->{upload} = $upload;
