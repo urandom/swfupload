@@ -331,7 +331,7 @@ sub _realize {
     $self->_appendInitScript("IWL.SWFUpload.create('$id', $swfoptions, $options)");
 
     unless ($self->{_options}{autoUpload}) {
-        $self->{stop}->setStyle(display => 'none');
+        $self->{stop}->setStyle(visibility => 'hidden');
         $self->appendChild($self->{upload});
         $self->appendChild($self->{stop});
     }

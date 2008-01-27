@@ -14,7 +14,11 @@ inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
 lib/IWL/SWFUpload.pm
 lib/IWL/SWFUpload/Queue.pm
+share/images/queue/remove.gif
 share/jscript/swfupload.js
 share/jscript/dist/swfupload.js
 share/jscript/dist/swfupload_f9.swf
+share/images/queue/remove.gif
+share/images/queue/start.gif
+share/images/queue/stop.gif
 t/swfupload.t

@@ -7,10 +7,12 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
     var effect_duration = 0.06;
 
     function completeHandler() {
+        if (!this.upload._uploadStarted) return;
         var stats = this.control.getStats();
         if (stats.files_queued) {
             this.control.startUpload()
         } else {
+            this.upload._uploadStarted = false;
             this.stop.fade({
                 duration: effect_duration,
                 afterFinish: this.upload.appear.bind(this.upload, {duration: effect_duration})
@@ -58,9 +60,11 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
             } else {
                 this.upload = this.select('.' + className + '_upload')[0];
                 this.stop = this.select('.' + className + '_stop')[0];
+                this.stop.setStyle({display: 'none', visibility: 'visible'});
 
                 this.upload.signalConnect('click', function() {
                     this.control.startUpload();
+                    this.upload._uploadStarted = true;
                     this.upload.fade({
                         duration: effect_duration,
                         afterFinish: this.stop.appear.bind(this.stop, {duration: effect_duration})
@@ -68,6 +72,7 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
                 }.bind(this));
                 this.stop.signalConnect('click', function() {
                     this.control.stopUpload();
+                    this.upload._uploadStarted = false;
                     this.stop.fade({
                         duration: effect_duration,
                         afterFinish: this.upload.appear.bind(this.upload, {duration: effect_duration})
@@ -89,35 +94,76 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
  * @extends IWL.Widget
  * */
 IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () {
+    var disabled_opacity = 0.2;
+
     function fileQueueHandler(event, file) {
         var id = this.id + '_' + this.body.rows.length;
         var names = {id: id};
         var className = $A(this.classNames()).first();
-        var progress = false;
+        var progress = false, images = [];
         this.options.order.each(function(column, i) {
             names['name' + i] = column;
             if (column == 'status') progress = true;
+            if (['start', 'stop', 'remove'].include(column))
+                images.push(column);
         });
         var html = this.template.evaluate(names);
         this.appendRow(this.body, html);
         var row = $(id);
-        var cells;
+        var cell;
 
         this.files[file.id] = {row: row};
         if (progress) {
-            cells = row.select('.' + className + '_status');
-            if (cells[0]) {
-                progress = this.progress.cloneNode(true);
-                IWL.ProgressBar.create(progress);
-                cells[0].appendChild(progress);
-                progress.appear({duration: 0.3});
-                progress.id = id + '_progress';
-                progress.setText(IWL.SWFUpload.Queue.messages.progress.queue);
-                row.progress = progress;
-            }
+            cell = row.select('.' + className + '_status')[0];
+            progress = this.progress.cloneNode(true);
+            IWL.ProgressBar.create(progress);
+            cell.appendChild(progress);
+            progress.appear({duration: 0.3});
+            progress.id = id + '_progress';
+            progress.setText(IWL.SWFUpload.Queue.messages.progress.queue);
+            row.progress = progress;
         }
-        cells = row.select('.' + className + '_name');
-        if (cells[0]) cells[0].update(file.name);
+        images.each(function(column) {
+            cell = row.select('.' + className + '_' + column)[0];
+            var image = new Element('img', {
+                src: IWL.Config.IMAGE_DIR + '/queue/' + column + '.' + IWL.Config.ICON_EXT,
+                alt: column,
+                id: id + '_' + column
+            });
+            cell.appendChild(image);
+            if (column == 'remove') {
+                row.removeCell = cell;
+                var removeHandler = (function() {
+                    this.upload.control.cancelUpload(file.id);
+                    row.fade({duration: 1, afterFinish: row.remove.bind(row)});
+                }).bind(this);
+                cell.handler = removeHandler;
+                cellToggle(cell, true);
+            } else if (column == 'stop') {
+                row.stopCell = cell;
+                var stopHandler = (function() {
+                    cellToggle(row.stopCell, false);
+                    if (row.startCell)
+                        cellToggle(row.startCell, true);
+                    this.upload.control.stopUpload();
+                }).bind(this);
+                cell.handler = stopHandler;
+                cellToggle(cell, false);
+            } else if (column == 'start') {
+                row.startCell = cell;
+                var startHandler = (function() {
+                    cellToggle(row.startCell, false);
+                    if (row.stopCell)
+                        cellToggle(row.stopCell, true);
+                    this.upload.control.startUpload(file.id);
+                }).bind(this);
+                cell.handler = startHandler;
+                cellToggle(cell, true);
+            }
+        }.bind(this));
+
+        cell = row.select('.' + className + '_name')[0];
+        if (cell) cell.update(file.name);
         return this;
     }
 
@@ -125,6 +171,10 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
         var row = this.files[file.id].row;
         if (row.progress)
             row.progress.setText(IWL.SWFUpload.Queue.messages.progress.progress).setValue(0);
+        if (row.startCell)
+            cellToggle(row.startCell, false);
+        if (row.stopCell)
+            cellToggle(row.stopCell, true);
     }
 
     function uploadProgressHandler(event, file, complete, total) {
@@ -135,17 +185,42 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
 
     function uploadErrorHandler(event, file, code) {
         var row = this.files[file.id].row;
+        if (!row || !row.parentNode) return;
         if (row.progress)
             row.progress.setText(
                 IWL.SWFUpload.Queue.messages.progress.error + ': ' +
                 IWL.SWFUpload.Queue.messages.uploadErrors[code]
             );
+        if (code == SWFUpload.UPLOAD_ERROR.UPLOAD_STOPPED) {
+            if (row.startCell)
+                cellToggle(row.startCell, true);
+            if (row.stopCell)
+                cellToggle(row.stopCell, false);
+            if (row.progress)
+                (function() {
+                    row.progress.setText(IWL.SWFUpload.Queue.messages.queue);
+                }).delay(3);
+        }
     }
 
     function uploadSuccessHandler(event, file) {
         var row = this.files[file.id].row;
         if (row.progress)
             row.progress.setText(IWL.SWFUpload.Queue.messages.progress.complete);
+        if (row.stopCell)
+            cellToggle(row.stopCell, false);
+        if (row.removeCell)
+            cellToggle(row.removeCell, false);
+    }
+
+    function cellToggle(cell, on) {
+        if (on) {
+            cell.observe('click', cell.handler);
+            cell.setOpacity(1);
+        } else {
+            cell.stopObserving('click', cell.handler);
+            cell.setOpacity(disabled_opacity);
+        }
     }
 
     return {
