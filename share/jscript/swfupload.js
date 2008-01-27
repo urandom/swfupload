@@ -188,7 +188,9 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
         if (!row || !row.parentNode) return;
         if (row.progress)
             row.progress.setText(
-                IWL.SWFUpload.Queue.messages.progress.error + ': ' +
+                ([-280, -290].include(code)
+                  ? ''
+                  : (IWL.SWFUpload.Queue.messages.progress.error + ': ')) +
                 IWL.SWFUpload.Queue.messages.uploadErrors[code]
             );
         if (code == SWFUpload.UPLOAD_ERROR.UPLOAD_STOPPED) {

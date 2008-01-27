@@ -133,7 +133,7 @@ sub _realize {
     my $messages = {
         progress => {
             queue    => __"Queued",
-            complete => __"Complete",
+            complete => __"Completed",
             progress => "#{percent}",
             error    => __"Error",
         },
