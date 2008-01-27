@@ -89,45 +89,66 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
  * @extends IWL.Widget
  * */
 IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () {
-    function fileQueueHandler(event, file_queue) {
-        this.addFile(file_queue);
+    function fileQueueHandler(event, file) {
+        var id = this.id + '_' + this.body.rows.length;
+        var names = {id: id};
+        var className = $A(this.classNames()).first();
+        var progress = false;
+        this.options.order.each(function(column, i) {
+            names['name' + i] = column;
+            if (column == 'status') progress = true;
+        });
+        var html = this.template.evaluate(names);
+        this.appendRow(this.body, html);
+        var row = $(id);
+        var cells;
+
+        this.files[file.id] = {row: row};
+        if (progress) {
+            cells = row.select('.' + className + '_status');
+            if (cells[0]) {
+                progress = this.progress.cloneNode(true);
+                IWL.ProgressBar.create(progress);
+                cells[0].appendChild(progress);
+                progress.appear({duration: 0.3});
+                progress.id = id + '_progress';
+                progress.setText(IWL.SWFUpload.Queue.messages.progress.queue);
+                row.progress = progress;
+            }
+        }
+        cells = row.select('.' + className + '_name');
+        if (cells[0]) cells[0].update(file.name);
+        return this;
+    }
+
+    function uploadStartHandler(event, file) {
+        var row = this.files[file.id].row;
+        if (row.progress)
+            row.progress.setText(IWL.SWFUpload.Queue.messages.progress.progress).setValue(0);
+    }
+
+    function uploadProgressHandler(event, file, complete, total) {
+        var row = this.files[file.id].row;
+        if (row.progress)
+            row.progress.setValue(complete/total);
+    }
+
+    function uploadErrorHandler(event, file, code) {
+        var row = this.files[file.id].row;
+        if (row.progress)
+            row.progress.setText(
+                IWL.SWFUpload.Queue.messages.progress.error + ': ' +
+                IWL.SWFUpload.Queue.messages.uploadErrors[code]
+            );
+    }
+
+    function uploadSuccessHandler(event, file) {
+        var row = this.files[file.id].row;
+        if (row.progress)
+            row.progress.setText(IWL.SWFUpload.Queue.messages.progress.complete);
     }
 
     return {
-        /**
-         * Adds a file to the queue
-         * @param file An swfupload file object
-         * @returns The object
-         * */
-        addFile: function(file) {
-            var id = this.id + '_' + this.body.rows.length;
-            var names = {id: id};
-            var className = $A(this.classNames()).first();
-            var progress = false;
-            this.options.order.each(function(column, i) {
-                names['name' + i] = column;
-                if (column == 'status') progress = true;
-            });
-            var html = this.template.evaluate(names);
-            this.appendRow(this.body, html);
-            var row = $(id);
-            var cells;
-
-            row.file = file;
-            if (progress) {
-                cells = row.select('.' + className + '_status');
-                if (cells[0]) {
-                    progress = this.progress.cloneNode(true);
-                    IWL.ProgressBar.create(progress);
-                    cells[0].appendChild(progress);
-                    progress.appear({duration: 0.3});
-                    progress.id = id + '_progress';
-                }
-            }
-            cells = row.select('.' + className + '_name');
-            if (cells[0]) cells[0].update(file.name);
-            return this;
-        },
 
         _init: function (id, upload) {
             this.options = Object.extend({
@@ -135,6 +156,8 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
             }, arguments[2] || {});
             if (Object.isString(this.options.order))
                 this.options.order = this.options.order.evalJSON(1);
+            Object.extend(IWL.SWFUpload.Queue, {messages: arguments[3]});
+
             this.progress = $(id + '_progress');
 
             var className = $A(this.classNames()).first();
@@ -144,8 +167,14 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
             });
             template += '</tr>';
             this.template = new Template(template);
+
+            this.files = {};
             this.upload = upload;
             upload.signalConnect('iwl:file_queue', fileQueueHandler.bind(this));
+            upload.signalConnect('iwl:upload_start', uploadStartHandler.bind(this));
+            upload.signalConnect('iwl:upload_progress', uploadProgressHandler.bind(this));
+            upload.signalConnect('iwl:upload_error', uploadErrorHandler.bind(this));
+            upload.signalConnect('iwl:upload_success', uploadSuccessHandler.bind(this));
         }
     }
 })());
