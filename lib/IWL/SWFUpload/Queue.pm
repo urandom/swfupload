@@ -109,23 +109,29 @@ sub bindToUpload {
 # Protected
 #
 sub _realize {
-    my $self  = shift;
-    my $id    = $self->getId;
+    my $self = shift;
+    my $id   = $self->getId;
+    my $progress;
 
     return $self->_pushFatalError(__"Queue: Missing SWFUpload widget") unless $self->{__upload};
     $self->SUPER::_realize;
 
-    my $options = toJSON($self->{_options});
-    $self->_appendInitScript("IWL.SWFUpload.Queue.create('$id', \$('$self->{__upload}'), $options)");
-    $self->{__header}->setStyle(display => 'none') unless $self->{_options}{showHeader};
-    foreach my $column (@{$self->{_options}{order}}) {
+    my $options = toJSON($self->{__queueOptions});
+    $self->_appendInitScript("IWL.SWFUpload.Queue.create('$id', \$('@{[$self->{__upload}->getId]}'), $options)");
+    $self->{__header}->setStyle(display => 'none') unless $self->{__queueOptions}{showHeader};
+    foreach my $column (@{$self->{__queueOptions}{order}}) {
         if ($column eq 'name') {
             $self->{__header}->appendTextHeaderCell(__"Name");
         } elsif ($column eq 'status') {
             $self->{__header}->appendTextHeaderCell(__"Status");
+            $progress = 1;
         } else {
             $self->{__header}->appendHeaderCell;
         }
+    }
+    if ($progress) {
+        $self->{__progressBar}->setId($id . '_progress')->setStyle(display => 'none');
+        unshift @{$self->{_tailObjects}}, $self->{__progressBar};
     }
 }
 
@@ -134,15 +140,17 @@ sub _realize {
 $init = sub {
     my ($self, %args) = @_;
     my $header = IWL::Tree::Row->new;
+    my $progress = IWL::ProgressBar->new;
     
-    $self->{_options} = {order => [qw(name status remove)]};
-    $self->{_options}{order} = $args{order} if defined $args{order};
-    $self->{_options}{showHeader} = $args{showHeader} ? 1 : 0;
+    $self->{__queueOptions} = {order => [qw(name status remove)]};
+    $self->{__queueOptions}{order} = $args{order} if defined $args{order};
+    $self->{__queueOptions}{showHeader} = $args{showHeader} ? 1 : 0;
     delete @args{qw(order showHeader)};
 
     $self->appendClass('swfupload_queue');
     $args{id} ||= randomize($self->{_defaultClass});
 
+    $self->{__progressBar} = $progress;
     $self->{__header} = $header;
     $self->appendHeader($header);
     $self->_constructorArguments(%args);

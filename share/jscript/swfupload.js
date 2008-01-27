@@ -89,6 +89,10 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
  * @extends IWL.Widget
  * */
 IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () {
+    function fileQueueHandler(event, file_queue) {
+        this.addFile(file_queue);
+    }
+
     return {
         /**
          * Adds a file to the queue
@@ -96,6 +100,32 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
          * @returns The object
          * */
         addFile: function(file) {
+            var id = this.id + '_' + this.body.rows.length;
+            var names = {id: id};
+            var className = $A(this.classNames()).first();
+            var progress = false;
+            this.options.order.each(function(column, i) {
+                names['name' + i] = column;
+                if (column == 'status') progress = true;
+            });
+            var html = this.template.evaluate(names);
+            this.appendRow(this.body, html);
+            var row = $(id);
+            var cells;
+
+            row.file = file;
+            if (progress) {
+                cells = row.select('.' + className + '_status');
+                if (cells[0]) {
+                    progress = this.progress.cloneNode(true);
+                    IWL.ProgressBar.create(progress);
+                    cells[0].appendChild(progress);
+                    progress.appear({duration: 0.3});
+                    progress.id = id + '_progress';
+                }
+            }
+            cells = row.select('.' + className + '_name');
+            if (cells[0]) cells[0].update(file.name);
             return this;
         },
 
@@ -105,6 +135,17 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
             }, arguments[2] || {});
             if (Object.isString(this.options.order))
                 this.options.order = this.options.order.evalJSON(1);
+            this.progress = $(id + '_progress');
+
+            var className = $A(this.classNames()).first();
+            var template = '<tr id="#{id}">';
+            this.options.order.length.times(function(i) {
+                template += '<td class="' + className + '_#{name' + i + '}"></td>';
+            });
+            template += '</tr>';
+            this.template = new Template(template);
+            this.upload = upload;
+            upload.signalConnect('iwl:file_queue', fileQueueHandler.bind(this));
         }
     }
 })());
