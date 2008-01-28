@@ -56,6 +56,8 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
                 multiple: false,
                 autoUpload: false
             }, arguments[2] || {});
+            Object.extend(IWL.SWFUpload, {messages: arguments[3]});
+
             var className = $A(this.classNames()).first();
             this.control = new SWFUpload(Object.extend(swfoptions, {
                 swfupload_loaded_handler: this.emitSignal.bind(this, 'iwl:load'),
@@ -135,7 +137,7 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
             cell.appendChild(progress);
             progress.appear({duration: 0.3});
             progress.id = id + '_progress';
-            progress.setText(IWL.SWFUpload.Queue.messages.progress.queue);
+            progress.setText(IWL.SWFUpload.messages.progress.queue);
             row.progress = progress;
         }
         images.each(function(column) {
@@ -185,7 +187,7 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
     function uploadStartHandler(event, file) {
         var row = this.files[file.id].row;
         if (row.progress)
-            row.progress.setText(IWL.SWFUpload.Queue.messages.progress.progress).setValue(0);
+            row.progress.setText(IWL.SWFUpload.messages.progress.progress).setValue(0);
         if (row.startCell)
             cellToggle(row.startCell, false);
         if (row.stopCell)
@@ -205,8 +207,8 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
             row.progress.setText(
                 ([-280, -290].include(code)
                   ? ''
-                  : (IWL.SWFUpload.Queue.messages.progress.error + ': ')) +
-                IWL.SWFUpload.Queue.messages.uploadErrors[code]
+                  : (IWL.SWFUpload.messages.progress.error + ': ')) +
+                IWL.SWFUpload.messages.uploadErrors[code]
             );
         if (code == SWFUpload.UPLOAD_ERROR.UPLOAD_STOPPED) {
             if (row.startCell)
@@ -215,7 +217,7 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
                 cellToggle(row.stopCell, false);
             if (row.progress)
                 (function() {
-                    row.progress.setText(IWL.SWFUpload.Queue.messages.progress.queue);
+                    row.progress.setText(IWL.SWFUpload.messages.progress.queue);
                 }).delay(3);
         }
     }
@@ -223,7 +225,7 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
     function uploadSuccessHandler(event, file) {
         var row = this.files[file.id].row;
         if (row.progress)
-            row.progress.setText(IWL.SWFUpload.Queue.messages.progress.complete);
+            row.progress.setText(IWL.SWFUpload.messages.progress.complete);
         if (row.stopCell)
             cellToggle(row.stopCell, false);
         if (row.removeCell)
@@ -248,7 +250,6 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
             }, arguments[2] || {});
             if (Object.isString(this.options.order))
                 this.options.order = this.options.order.evalJSON(1);
-            Object.extend(IWL.SWFUpload.Queue, {messages: arguments[3]});
 
             this.progress = $(id + '_progress');
 

@@ -130,35 +130,8 @@ sub _realize {
         $self->{__progressBar}->setId($id . '_progress')->setStyle(display => 'none');
         unshift @{$self->{_tailObjects}}, $self->{__progressBar};
     }
-    my $messages = {
-        progress => {
-            queue    => __"Queued",
-            complete => __"Completed",
-            progress => "#{percent}",
-            error    => __"Error",
-        },
-        uploadErrors => {
-            -200 => __"HTTP error",
-            -210 => __"Missing upload URL",
-            -220 => __"IO error",
-            -230 => __"Security error",
-            -240 => __"Upload limit exceeded",
-            -250 => __"Upload failed",
-            -260 => __"Specified file ID not found",
-            -270 => __"File validation failed",
-            -280 => __"Upload cancelled",
-            -290 => __"Upload stopped",
-        },
-        queueErrors => {
-            -100 => __"Queue limit exceeded",
-            -110 => __"File size limit exceeded",
-            -120 => __"File has zero byte size",
-            -130 => __"Invalid filetype",
-        },
-    };
     my $options = toJSON($self->{__queueOptions});
-    $messages = toJSON($messages);
-    $self->_appendInitScript("IWL.SWFUpload.Queue.create('$id', \$('@{[$self->{__upload}->getId]}'), $options, $messages)");
+    $self->_appendInitScript("IWL.SWFUpload.Queue.create('$id', \$('@{[$self->{__upload}->getId]}'), $options)");
     $self->{__header}->setStyle(display => 'none') unless $self->{__queueOptions}{showHeader};
 }
 
