@@ -7,17 +7,16 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
     var effect_duration = 0.06;
 
     function completeHandler() {
-        if (!this.upload._uploadStarted) return;
         var stats = this.control.getStats();
         if (stats.files_queued) {
+            if (!this.options.autoUpload && !this.upload._uploadStarted) return;
             this.control.startUpload()
         } else {
-            this.upload._uploadStarted = false;
-            this.stop.fade({
-                duration: effect_duration,
-                afterFinish: this.upload.appear.bind(this.upload, {duration: effect_duration})
-            });
+            if (this.options.autoUpload) return;
             this.upload.setDisabled(1);
+            if (!this.upload._uploadStarted) return;
+            this.upload._uploadStarted = false;
+            buttonToggle(this.stop, this.upload);
         }
     }
 
@@ -28,6 +27,27 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
         else
             this.upload.setDisabled(1);
     }
+
+    function uploadErrorHandler(event, file, code) {
+        var stats = this.control.getStats();
+        if (code != SWFUpload.UPLOAD_ERROR.FILE_CANCELLED) return;
+        if (stats.files_queued) return;
+
+        if (this.stop.visible())
+            buttonToggle(this.stop, this.upload, this.upload.setDisabled.bind(this.upload, 1));
+        else
+            this.upload.setDisabled(1);
+    }
+
+    function buttonToggle(from, to, code) {
+        from.fade({
+            duration: effect_duration,
+            afterFinish: function() {
+                to.appear({duration: effect_duration, afterFinish: code || Prototype.emptyFunction})
+            }
+        });
+    }
+
 
     return {
 
@@ -65,26 +85,21 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
                 this.upload.signalConnect('click', function() {
                     this.control.startUpload();
                     this.upload._uploadStarted = true;
-                    this.upload.fade({
-                        duration: effect_duration,
-                        afterFinish: this.stop.appear.bind(this.stop, {duration: effect_duration})
-                    });
+                    buttonToggle(this.upload, this.stop);
                 }.bind(this));
                 this.stop.signalConnect('click', function() {
                     this.control.stopUpload();
                     this.upload._uploadStarted = false;
-                    this.stop.fade({
-                        duration: effect_duration,
-                        afterFinish: this.upload.appear.bind(this.upload, {duration: effect_duration})
-                    });
+                    buttonToggle(this.stop, this.upload);
                 }.bind(this));
+                this.signalConnect('iwl:file_queue', queueHandler.bind(this));
+                this.signalConnect('iwl:upload_error', uploadErrorHandler.bind(this));
             }
 
             this.browse.signalConnect('click', function() {
                 this.options.multiple ? this.control.selectFiles() : this.control.selectFile();
             }.bind(this));
             this.signalConnect('iwl:upload_complete', completeHandler.bind(this));
-            this.signalConnect('iwl:file_queue', queueHandler.bind(this));
         }
     }
 })());
