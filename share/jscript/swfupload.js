@@ -200,7 +200,7 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
                 cellToggle(row.stopCell, false);
             if (row.progress)
                 (function() {
-                    row.progress.setText(IWL.SWFUpload.Queue.messages.queue);
+                    row.progress.setText(IWL.SWFUpload.Queue.messages.progress.queue);
                 }).delay(3);
         }
     }
