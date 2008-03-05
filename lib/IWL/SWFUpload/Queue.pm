@@ -63,6 +63,10 @@ An image, which will stop the upload of the file when clicked
 
 An image, which will remove the file when clicked
 
+=item B<{name =E<gt> name, callback =E<gt> callback, title =E<gt> title}>
+
+If the element is a hash reference, it will be used in the following way: If a I<title> key is present, its value will be shown in the header. A I<callback> key, with a valid javascript function name must be present. The callback will be executed each time a file is queued. The table cell, file and upload objects will be passed to the callback upon execution. A I<name> key, specifying the name of the column, must also be present.
+
 =back
 
 Default value: I<[name, status, remove]>
@@ -117,19 +121,24 @@ sub _realize {
     $self->SUPER::_realize;
 
     foreach my $column (@{$self->{__queueOptions}{order}}) {
-        if ($column eq 'name') {
+        if (ref $column eq 'HASH' && $column->{title} && $column->{callback} && $column->{name}) {
+            $self->{__header}->appendTextHeaderCell($column->{title});
+        } elsif ($column eq 'name') {
             $self->{__header}->appendTextHeaderCell(__"Name");
         } elsif ($column eq 'status') {
             $self->{__header}->appendTextHeaderCell(__"Status");
             $progress = 1;
-        } else {
+        } elsif (grep {$_ eq $column} qw(start stop remove)) {
             $self->{__header}->appendHeaderCell;
+        } else {
+            $column = '';
         }
     }
     if ($progress) {
         $self->{__progressBar}->setId($id . '_progress')->setStyle(display => 'none');
         unshift @{$self->{_tailObjects}}, $self->{__progressBar};
     }
+    $self->{__queueOptions}{order} = [grep { !(!$_) } @{$self->{__queueOptions}{order}}];
     my $options = toJSON($self->{__queueOptions});
     $self->_appendInitScript("IWL.SWFUpload.Queue.create('$id', \$('@{[$self->{__upload}->getId]}'), $options)");
     $self->{__header}->setStyle(display => 'none') unless $self->{__queueOptions}{showHeader};

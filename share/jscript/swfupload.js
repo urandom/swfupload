@@ -117,12 +117,17 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
         var id = this.id + '_' + this.body.rows.length;
         var names = {id: id};
         var className = $A(this.classNames()).first();
-        var progress = false, images = [];
+        var progress = false, images = [], custom = [];
         this.options.order.each(function(column, i) {
-            names['name' + i] = column;
             if (column == 'status') progress = true;
             if (['start', 'stop', 'remove'].include(column))
                 images.push(column);
+            if (Object.isObject(column)) {
+                custom.push(column);
+                names['name' + i] = column.name;
+            } else {
+                names['name' + i] = column;
+            }
         });
         var html = this.template.evaluate(names);
         this.appendRow(this.body, html);
@@ -152,7 +157,6 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
                 row.removeCell = cell;
                 var removeHandler = (function() {
                     this.upload.control.cancelUpload(file.id);
-                    row.fade({duration: 1, afterFinish: row.remove.bind(row)});
                 }).bind(this);
                 cell.handler = removeHandler;
                 cellToggle(cell, true);
@@ -177,6 +181,12 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
                 cell.handler = startHandler;
                 cellToggle(cell, true);
             }
+        }.bind(this));
+        custom.each(function(column) {
+            cell = row.select('.' + className + '_' + column.name)[0];
+            var callback = codePointer(column.callback);
+            if (Object.isFunction(callback))
+                callback(cell, file, this.upload);
         }.bind(this));
 
         cell = row.select('.' + className + '_name')[0];
@@ -219,6 +229,8 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
                 (function() {
                     row.progress.setText(IWL.SWFUpload.messages.progress.queue);
                 }).delay(3);
+        } else if (code == SWFUpload.UPLOAD_ERROR.FILE_CANCELLED) {
+            row.fade.bind(row, {duration: 1, afterFinish: row.remove.bind(row)}).delay(1);
         }
     }
 
@@ -240,6 +252,13 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
             cell.stopObserving('click', cell.handler);
             cell.setOpacity(disabled_opacity);
         }
+    }
+
+    function codePointer(string) {
+        return string.split('.').inject(window, function(parent, child) {
+            if (!parent || !parent[child]) throw $break;
+            return parent[child];
+        });
     }
 
     return {
