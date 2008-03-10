@@ -104,7 +104,9 @@ Parameters: B<UPLOAD> - an L<IWL::SWFUpload> widget
 sub bindToUpload {
     my ($self, $upload) = @_;
 
-    return unless UNIVERSAL::isa($upload, 'IWL::SWFUpload');
+    return unless $upload
+      && !ref $upload 
+      || UNIVERSAL::isa($upload, 'IWL::SWFUpload');
     $self->{__upload} = $upload;
 
     return $self;
@@ -140,7 +142,10 @@ sub _realize {
     }
     $self->{__queueOptions}{order} = [grep { !(!$_) } @{$self->{__queueOptions}{order}}];
     my $options = toJSON($self->{__queueOptions});
-    $self->_appendInitScript("IWL.SWFUpload.Queue.create('$id', \$('@{[$self->{__upload}->getId]}'), $options)");
+    my $uploadId = ref $self->{__upload}
+      ? $self->{__upload}->getId
+      : $self->{__upload};
+    $self->_appendInitScript("IWL.SWFUpload.Queue.create('$id', \$('$uploadId'), $options)");
     $self->{__header}->setStyle(display => 'none') unless $self->{__queueOptions}{showHeader};
 }
 
