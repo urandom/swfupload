@@ -21,4 +21,5 @@ share/jscript/dist/swfupload_f9.swf
 share/images/queue/remove.gif
 share/images/queue/start.gif
 share/images/queue/stop.gif
-t/swfupload.t
+t/10swfupload.t
+t/20queue.t

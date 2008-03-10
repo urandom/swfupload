@@ -230,7 +230,7 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
                     row.progress.setText(IWL.SWFUpload.messages.progress.queue);
                 }).delay(3);
         } else if (code == SWFUpload.UPLOAD_ERROR.FILE_CANCELLED) {
-            row.fade.bind(row, {duration: 1, afterFinish: row.remove.bind(row)}).delay(1);
+            row.fade.bind(row, {duration: 1, afterFinish: row.remove.bind(row)}).delay(3);
         }
     }
 
