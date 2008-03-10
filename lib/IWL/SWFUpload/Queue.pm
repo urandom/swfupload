@@ -97,7 +97,7 @@ sub new {
 
 Binds the queue to the given upload widget.
 
-Parameters: B<UPLOAD> - an L<IWL::SWFUpload> widget
+Parameters: B<UPLOAD> - an L<IWL::SWFUpload> widget, or a string, which represents the L<IWL::SWFUpload> widget's ID.
 
 =cut
 
