@@ -18,6 +18,7 @@ share/images/queue/remove.gif
 share/jscript/swfupload.js
 share/jscript/dist/swfupload.js
 share/jscript/dist/swfupload_f9.swf
+share/jscript/plugins/swfupload/cookie.js
 share/images/queue/remove.gif
 share/images/queue/start.gif
 share/images/queue/stop.gif

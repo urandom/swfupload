@@ -195,7 +195,7 @@ Parameters: B<%PARAMS> - a hash of parameters
 sub setPostParams {
     my ($self, %params) = @_;
 
-    $self->{__SWFOptions}{post_params} = {%params};
+    $self->{__SWFOptions}{post_params} = {%{$self->{__SWFOptions}{post_params} || {}}, %params};
 
     return $self;
 }
@@ -317,6 +317,29 @@ sub getFileQueueLimit {
     return shift->{__SWFOptions}{file_queue_limit};
 }
 
+=item B<registerPlugin> (B<PLUGIN>)
+
+Registers an SWFUpload plugin. The following plugins are currently available, and documented within their respective JavaScript files:
+
+=over 8
+
+=item B<cookie>
+
+If this plugin is registered, it will automatically add the cookie string to a POST parameter, named I<SWFUploadCookie>.
+
+=back
+
+Parameters: B<PLUGIN> - the name (or a list of names) of the plugin to register.
+
+=cut
+
+sub registerPlugin {
+    my ($self, @plugin) = @_;
+
+    push @{$self->{__plugins}}, map {'plugins/swfupload/' . $_ . '.js'} @plugin;
+    return $self;
+}
+
 # Protected
 #
 sub _realize {
@@ -362,6 +385,7 @@ sub _realize {
         $self->appendChild($self->{upload});
         $self->appendChild($self->{stop});
     }
+    $self->requiredJs(@{$self->{__plugins}});
 }
 
 sub _setupDefaultClass {
@@ -396,6 +420,7 @@ $init = sub {
     $args{id} ||= randomize($self->{_defaultClass});
 
     $self->{__SWFOptions} = {flash_url => $IWLConfig{JS_DIR} . '/dist/swfupload_f9.swf'};
+    $self->{__plugins} = [];
     $self->requiredJs('base.js', 'dist/swfupload.js', 'swfupload.js');
     $self->_constructorArguments(%args);
     $self->{_customSignals} = {

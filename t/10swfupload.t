@@ -1,4 +1,4 @@
-use Test::More tests => 18;
+use Test::More tests => 19;
 
 BEGIN {use_ok('IWL::SWFUpload')}
 
@@ -27,4 +27,5 @@ BEGIN {use_ok('IWL::SWFUpload')}
     is($swf->getFileUploadLimit, 5);
     is($swf->setFileQueueLimit(5), $swf);
     is($swf->getFileQueueLimit, 5);
+    is($swf->registerPlugin('cookie'), $swf);
 }

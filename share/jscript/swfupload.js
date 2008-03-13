@@ -263,6 +263,14 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
 
     return {
 
+        _preInit: function(id, upload) {
+            if (!$(upload) && !document.loaded) {
+                document.observe('dom:loaded', this.create.bind(this, id, upload, arguments[2]));
+                return false;
+            }
+            return true;
+        },
+
         _init: function (id, upload) {
             this.options = Object.extend({
                 order: ['name', 'status', 'remove']
@@ -281,7 +289,7 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
             this.template = new Template(template);
 
             this.files = {};
-            this.upload = upload;
+            this.upload = upload = $(upload);
             upload.signalConnect('iwl:file_queue', fileQueueHandler.bind(this));
             upload.signalConnect('iwl:upload_start', uploadStartHandler.bind(this));
             upload.signalConnect('iwl:upload_progress', uploadProgressHandler.bind(this));

@@ -145,7 +145,7 @@ sub _realize {
     my $uploadId = ref $self->{__upload}
       ? $self->{__upload}->getId
       : $self->{__upload};
-    $self->_appendInitScript("IWL.SWFUpload.Queue.create('$id', \$('$uploadId'), $options)");
+    $self->_appendInitScript("IWL.SWFUpload.Queue.create('$id', '$uploadId', $options)");
     $self->{__header}->setStyle(display => 'none') unless $self->{__queueOptions}{showHeader};
 }
 
@@ -167,6 +167,7 @@ $init = sub {
     $self->{__progressBar} = $progress;
     $self->{__header} = $header;
     $self->appendHeader($header);
+    $self->requiredJs('base.js', 'dist/swfupload.js', 'swfupload.js');
     $self->_constructorArguments(%args);
 
     return $self;
