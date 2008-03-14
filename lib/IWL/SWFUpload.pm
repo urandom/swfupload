@@ -46,7 +46,7 @@ If true, the invoked file selector can pick multiple files. Defaults to I<false>
 
 =item B<autoUpload>
 
-If true, file uploading starts as soon as the files are selected. An upload and stop buttons are never placed on the page.
+If true, file uploading starts as soon as the files are selected. An upload/stop button is never placed on the page.
 
 =back
 
@@ -374,17 +374,17 @@ sub _realize {
             -120 => __"File has zero byte size",
             -130 => __"Invalid filetype",
         },
+        buttonLabels => {
+            start => __"Upload",
+            stop => __"Stop uploading",
+        }
     };
     my $swfoptions = toJSON($self->{__SWFOptions});
     my $options = toJSON($self->{_options});
     $messages = toJSON($messages);
     $self->_appendInitScript("IWL.SWFUpload.create('$id', $swfoptions, $options, $messages)");
 
-    unless ($self->{_options}{autoUpload}) {
-        $self->{stop}->setStyle(visibility => 'hidden');
-        $self->appendChild($self->{upload});
-        $self->appendChild($self->{stop});
-    }
+    $self->appendChild($self->{upload}) unless $self->{_options}{autoUpload};
     $self->requiredJs(@{$self->{__plugins}});
 }
 
@@ -393,7 +393,6 @@ sub _setupDefaultClass {
     $self->prependClass($self->{_defaultClass});
     $self->{browse}->prependClass($self->{_defaultClass} . '_browse');
     $self->{upload}->prependClass($self->{_defaultClass} . '_upload');
-    $self->{stop}->prependClass($self->{_defaultClass} . '_stop');
 }
 
 # Internal
@@ -402,7 +401,6 @@ $init = sub {
     my ($self, %args) = @_;
     my $browse = IWL::Button->new;
     my $upload = IWL::Button->new;
-    my $stop   = IWL::Button->new;
     
     $self->{_options} = {};
     $self->{_options}{multiple}     = $args{multiple} ? 1 : 0;
@@ -411,10 +409,8 @@ $init = sub {
 
     $browse->setLabel(__"Browse ...");
     $upload->setLabel(__"Upload")->setDisabled(1);
-    $stop->setLabel(__"Stop uploading");
     $self->{browse} = $browse;
     $self->{upload} = $upload;
-    $self->{stop}   = $stop;
     $self->appendChild($browse);
     $self->{_defaultClass} = 'swfupload';
     $args{id} ||= randomize($self->{_defaultClass});

@@ -10,13 +10,12 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
         var stats = this.control.getStats();
         if (stats.files_queued) {
             if (!this.options.autoUpload && !this.upload._uploadStarted) return;
-            this.control.startUpload()
+            this.control.startUpload.bind(this.control).defer()
         } else {
             if (this.options.autoUpload) return;
             this.upload.setDisabled(1);
             if (!this.upload._uploadStarted) return;
-            this.upload._uploadStarted = false;
-            buttonToggle(this.stop, this.upload);
+            buttonToggle.call(this, this.upload._uploadStarted = false);
         }
     }
 
@@ -33,19 +32,12 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
         if (code != SWFUpload.UPLOAD_ERROR.FILE_CANCELLED) return;
         if (stats.files_queued) return;
 
-        if (this.stop.visible())
-            buttonToggle(this.stop, this.upload, this.upload.setDisabled.bind(this.upload, 1));
-        else
-            this.upload.setDisabled(1);
+        buttonToggle.call(this, false);
+        this.upload.setDisabled(1);
     }
 
-    function buttonToggle(from, to, code) {
-        from.fade({
-            duration: effect_duration,
-            afterFinish: function() {
-                to.appear({duration: effect_duration, afterFinish: code || Prototype.emptyFunction})
-            }
-        });
+    function buttonToggle(start) {
+        this.upload.setLabel(IWL.SWFUpload.messages.buttonLabels[start ? 'stop' : 'start']);
     }
 
 
@@ -81,18 +73,13 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
                 this.signalConnect('iwl:file_dialog_complete', function() {this.control.startUpload()}.bind(this));
             } else {
                 this.upload = this.select('.' + className + '_upload')[0];
-                this.stop = this.select('.' + className + '_stop')[0];
-                this.stop.setStyle({display: 'none', visibility: 'visible'});
+                this.upload._uploadStarted = false;
 
                 this.upload.signalConnect('click', function() {
-                    this.control.startUpload();
-                    this.upload._uploadStarted = true;
-                    buttonToggle(this.upload, this.stop);
-                }.bind(this));
-                this.stop.signalConnect('click', function() {
-                    this.control.stopUpload();
-                    this.upload._uploadStarted = false;
-                    buttonToggle(this.stop, this.upload);
+                    buttonToggle.call(this, this.upload._uploadStarted = !this.upload._uploadStarted);
+                    this.upload._uploadStarted
+                      ? this.control.startUpload()
+                      : this.control.stopUpload();
                 }.bind(this));
                 this.signalConnect('iwl:file_queue', queueHandler.bind(this));
                 this.signalConnect('iwl:upload_error', uploadErrorHandler.bind(this));
