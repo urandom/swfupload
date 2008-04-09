@@ -101,7 +101,7 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
     var disabled_opacity = 0.2;
 
     function fileQueueHandler(event, file) {
-        var id = this.id + '_' + this.body.rows.length;
+        var id = this.id + '_' + file.id;
         var names = {id: id};
         var className = $A(this.classNames()).first();
         var progress = false, images = [], custom = [];
@@ -242,6 +242,7 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
     }
 
     function codePointer(string) {
+        if (!Object.isString(string)) return;
         return string.split('.').inject(window, function(parent, child) {
             if (!parent || !parent[child]) throw $break;
             return parent[child];
@@ -249,6 +250,23 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
     }
 
     return {
+        /**
+         * Toggles the enable upload state per queue file.
+         * @param {Object} options The following options are recognized:
+         *        fileId: The the file id, corresponding to the file to toggle. If none are specified, all files are toggled.
+         *        on: if true, upload will be allowed. Otherwise, upload will be disabled.
+         *
+         * @returns The object
+         * */
+        toggleFileUploadState: function() {
+            var options = Object.extend({on: false}, arguments[0]), rows = [];
+            if (options.fileId) rows.push(this.files[options.fileId].row);
+            else rows = $H(this.files).values().pluck('row');
+            rows.each(function(row) {
+                if (!row.parentNode || !row.startCell) return;
+                cellToggle(row.startCell, options.on);
+            });
+        },
 
         _preInit: function(id, upload) {
             if (!$(upload) && !document.loaded) {
@@ -282,6 +300,8 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
             upload.signalConnect('iwl:upload_progress', uploadProgressHandler.bind(this));
             upload.signalConnect('iwl:upload_error', uploadErrorHandler.bind(this));
             upload.signalConnect('iwl:upload_success', uploadSuccessHandler.bind(this));
+
+            this.emitSignal('iwl:load');
         }
     }
 })());

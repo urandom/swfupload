@@ -77,6 +77,16 @@ If true, will show the queue header
 
 =back
 
+=head1 SIGNALS
+
+=over 4
+
+=item B<load>
+
+Fires when the widget is loaded.
+
+=back
+
 =cut
 
 sub new {
@@ -123,8 +133,8 @@ sub _realize {
     $self->SUPER::_realize;
 
     foreach my $column (@{$self->{__queueOptions}{order}}) {
-        if (ref $column eq 'HASH' && $column->{title} && $column->{callback} && $column->{name}) {
-            $self->{__header}->appendTextHeaderCell($column->{title});
+        if (ref $column eq 'HASH' && $column->{name}) {
+            $self->{__header}->appendTextHeaderCell($column->{title} || '');
         } elsif ($column eq 'name') {
             $self->{__header}->appendTextHeaderCell(__"Name");
         } elsif ($column eq 'status') {
@@ -170,6 +180,9 @@ $init = sub {
     $self->requiredJs('base.js', 'dist/swfupload.js', 'swfupload.js');
     $self->_constructorArguments(%args);
 
+    $self->{_customSignals} = {
+        load => [],
+    };
     return $self;
 };
 
