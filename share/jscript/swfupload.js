@@ -27,6 +27,10 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
             this.upload.setDisabled(1);
     }
 
+    function uploadStartHandler(event, file) {
+        this.upload.setDisabled(0);
+    }
+
     function uploadErrorHandler(event, file, code) {
         var stats = this.control.getStats();
         if (code != SWFUpload.UPLOAD_ERROR.FILE_CANCELLED) return;
@@ -36,10 +40,14 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
         this.upload.setDisabled(1);
     }
 
+    function uploadProgressHandler(event, file, complete, total) {
+        if (complete/total == 1)
+            this.upload.setDisabled(1);
+    }
+
     function buttonToggle(start) {
         this.upload.setLabel(IWL.SWFUpload.messages.buttonLabels[start ? 'stop' : 'start']);
     }
-
 
     return {
 
@@ -82,13 +90,33 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
                       : this.control.stopUpload();
                 }.bind(this));
                 this.signalConnect('iwl:file_queue', queueHandler.bind(this));
+                this.signalConnect('iwl:upload_start', uploadStartHandler.bind(this));
                 this.signalConnect('iwl:upload_error', uploadErrorHandler.bind(this));
+                this.signalConnect('iwl:upload_progress', uploadProgressHandler.bind(this));
             }
 
             this.browse.signalConnect('click', function() {
                 this.options.multiple ? this.control.selectFiles() : this.control.selectFile();
             }.bind(this));
             this.signalConnect('iwl:upload_complete', completeHandler.bind(this));
+
+            if (DetectFlashVer(9, 0, 0))
+                document.observe('dom:loaded', function() {
+                    this.browse.setDisabled(false);
+                }.bind(this));
+            else {
+                document.observe('dom:loaded', function() {
+                    this.emitSignal(this, 'iwl:flash_not_found')
+                    var info = new Element('span', {className: 'swfupload_missing_flash_plugin'}).update(IWL.SWFUpload.messages.flashErrors.missingPlugin);
+                    info.appendChild(new Element('br'));
+                    info.appendChild(new Element('a', {
+                        href: 'http://www.adobe.com/go/getflashplayer',
+                        target: 'ADOBEFLASH'
+                    }).update(IWL.SWFUpload.messages.flashErrors.missingPluginLink));
+                    
+                    this.insert({after: info});
+                }.bind(this));
+            }
         }
     }
 })());

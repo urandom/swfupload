@@ -376,7 +376,11 @@ sub _realize {
         },
         buttonLabels => {
             start => __"Upload",
-            stop => __"Stop uploading",
+            stop  => __"Stop uploading",
+        },
+        flashErrors => {
+            missingPlugin     => __"In order to upload files, you will need to upgrade to the latest version of the Adobe Flash Player.",
+            missingPluginLink => __"Get the Adobe Flash Player",
         }
     };
     my $swfoptions = toJSON($self->{__SWFOptions});
@@ -407,7 +411,7 @@ $init = sub {
     $self->{_options}{autoUpload}   = $args{autoUpload} ? 1 : 0;
     delete @args{qw(multiple autoUpload)};
 
-    $browse->setLabel(__"Browse ...");
+    $browse->setLabel(__"Browse ...")->setDisabled(1);
     $upload->setLabel(__"Upload")->setDisabled(1);
     $self->{browse} = $browse;
     $self->{upload} = $upload;
@@ -417,10 +421,11 @@ $init = sub {
 
     $self->{__SWFOptions} = {flash_url => $IWLConfig{JS_DIR} . '/dist/swfupload_f9.swf'};
     $self->{__plugins} = [];
-    $self->requiredJs('base.js', 'dist/swfupload.js', 'swfupload.js');
+    $self->requiredJs('base.js', 'dist/swfupload.js', 'dist/AC_OETags.js', 'swfupload.js');
     $self->_constructorArguments(%args);
     $self->{_customSignals} = {
         load => [],
+        flash_not_found => [],
         file_dialog_start => [],
         file_queue => [],
         file_queue_error => [],
