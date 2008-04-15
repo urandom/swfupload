@@ -59,6 +59,12 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
             Object.extend(IWL.SWFUpload, {messages: arguments[3]});
 
             var className = $A(this.classNames()).first();
+
+            // This is fixed in SWFUpload 2.1.0, and should be removed once ported to this version
+            if (swfoptions.post_params && Object.isObject(swfoptions.post_params))
+                for (var i in swfoptions.post_params)
+                    swfoptions.post_params[i] = swfoptions.post_params[i].toString();
+
             this.control = new SWFUpload(Object.extend(swfoptions, {
                 swfupload_loaded_handler: this.emitSignal.bind(this, 'iwl:load'),
                 file_dialog_start_handler: this.emitSignal.bind(this, 'iwl:file_dialog_start'),
