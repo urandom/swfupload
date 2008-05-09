@@ -388,7 +388,7 @@ sub _realize {
     $messages = toJSON($messages);
     $self->_appendInitScript("IWL.SWFUpload.create('$id', $swfoptions, $options, $messages)");
 
-    $self->appendChild($self->{upload}) unless $self->{_options}{autoUpload};
+    $self->{upload}->remove if $self->{_options}{autoUpload};
     $self->requiredJs(@{$self->{__plugins}});
 }
 
@@ -415,7 +415,7 @@ $init = sub {
     $upload->setLabel(__"Upload")->setDisabled(1);
     $self->{browse} = $browse;
     $self->{upload} = $upload;
-    $self->appendChild($browse);
+    $self->appendChild($browse, $upload);
     $self->{_defaultClass} = 'swfupload';
     $args{id} ||= randomize($self->{_defaultClass});
 
