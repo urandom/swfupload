@@ -1,14 +1,11 @@
-IWL version 0.52
+IWL-SWFUpload version 0.6.0
 ================
 
-The IWL includes several widgets with which consistent web pages can be built
-quickly. The structure resembles the DOM tree, with the API mimicking
-Javascript very closely.  The widgets themselves can be used either as
-standalone object in an already existing scripts, or can be used to build new
-scripts from the grounds up. They can be finalized in both HTML markup, and
-JSON notation, which can be used for scripts. More advanced widgets like the
-Iconbox come with Javascript files which are automatically included when the
-widget is finalized as HTML.
+The IWL-SWFUpload package provides a special widget for the IWL library.
+It provides the means for users to upload multiple files to a server,
+using Adobe Flash 9. The package provides the base widget for browsing
+and uploading files, as well as an additional helper widget, for visually
+displaying the queued and uploaded files, as well as their status.
 
 INSTALLATION
 
@@ -20,17 +17,14 @@ To install this module type the following:
    make install
 
 In order to actually use the library, the javascript and css files will also
-have to be installed in the server's document root. To do that, the
-'iwl-install' script is provided. It is usually located in '/usr/bin'
+have to be installed in the server's document root. To do that, use the
+'iwl-install' script, which is provided by IWL. It is usually located in '/usr/bin'
 
 DEPENDENCIES
 
 This module requires these other modules and libraries:
 
-  Scalar::Util
-  Locale::Messages
-  Locale::TextDomain
-  HTML::Parser
+  IWL
 
 COPYRIGHT AND LICENCE
 

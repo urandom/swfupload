@@ -16,7 +16,7 @@ use vars qw($VERSION);
 
 use Locale::TextDomain qw(org.bloka.iwl.swfupload);
 
-$VERSION = '0.1';
+$VERSION = '0.6.0';
 
 my $init;
 
@@ -26,7 +26,7 @@ IWL::SWFUpload - a file upload widget using the flash swfupload library
 
 =head1 INHERITANCE
 
-L<IWL::Error> -> L<IWL::Object> -> L<IWL::Widget> -> L<IWL::Button> -> L<IWL::SWFUpload>
+L<IWL::Error> -> L<IWL::Object> -> L<IWL::Widget> -> L<IWL::Container> -> L<IWL::SWFUpload>
 
 =head1 DESCRIPTION
 
