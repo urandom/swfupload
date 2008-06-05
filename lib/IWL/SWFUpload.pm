@@ -16,7 +16,7 @@ use vars qw($VERSION);
 
 use Locale::TextDomain qw(org.bloka.iwl.swfupload);
 
-$VERSION = '0.6.0';
+$VERSION = '0.6.1';
 
 my $init;
 
@@ -335,8 +335,10 @@ Parameters: B<PLUGIN> - the name (or a list of names) of the plugin to register.
 
 sub registerPlugin {
     my ($self, @plugin) = @_;
+    my @plugins = map {'plugins/swfupload/' . $_ . '.js'} @plugin;
 
-    push @{$self->{__plugins}}, map {'plugins/swfupload/' . $_ . '.js'} @plugin;
+    push @{$self->{__plugins}}, @plugins;
+    $self->requiredJs(@plugins);
     return $self;
 }
 
@@ -389,7 +391,6 @@ sub _realize {
     $self->_appendInitScript("IWL.SWFUpload.create('$id', $swfoptions, $options, $messages)");
 
     $self->{upload}->remove if $self->{_options}{autoUpload};
-    $self->requiredJs(@{$self->{__plugins}});
 }
 
 sub _setupDefaultClass {
