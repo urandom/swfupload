@@ -51,12 +51,12 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
 
     return {
 
-        _init: function (id, swfoptions) {
+        _init: function (swfoptions) {
             this.options = Object.extend({
                 multiple: false,
                 autoUpload: false
-            }, arguments[2] || {});
-            Object.extend(IWL.SWFUpload, {messages: arguments[3]});
+            }, arguments[1] || {});
+            Object.extend(IWL.SWFUpload, {messages: arguments[2]});
 
             var className = $A(this.classNames()).first();
 
@@ -310,14 +310,14 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
             return true;
         },
 
-        _init: function (id, upload) {
+        _init: function (upload) {
             this.options = Object.extend({
                 order: ['name', 'status', 'remove']
-            }, arguments[2] || {});
+            }, arguments[1] || {});
             if (Object.isString(this.options.order))
                 this.options.order = this.options.order.evalJSON(1);
 
-            this.progress = $(id + '_progress');
+            this.progress = $(this.id + '_progress');
 
             var className = $A(this.classNames()).first();
             var template = '<tr id="#{id}">';
