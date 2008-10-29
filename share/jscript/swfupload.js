@@ -31,7 +31,7 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
         this.upload.setDisabled(0);
     }
 
-    function uploadErrorHandler(event, file, code) {
+    function uploadErrorHandler(event, file, code, message) {
         var stats = this.control.getStats();
         if (code != SWFUpload.UPLOAD_ERROR.FILE_CANCELLED) return;
         if (stats.files_queued) return;
@@ -47,6 +47,50 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
 
     function buttonToggle(start) {
         this.upload.setLabel(IWL.SWFUpload.messages.buttonLabels[start ? 'stop' : 'start']);
+    }
+
+    function createControl(swfoptions, image) {
+        var className = $A(this.classNames()).first();
+
+        swfoptions.button_width = image.width;
+        swfoptions.button_height = image.height / 4;
+
+        this.control = new SWFUpload(Object.extend(swfoptions, {
+            swfupload_loaded_handler: this.emitSignal.bind(this, 'iwl:load'),
+            file_dialog_start_handler: this.emitSignal.bind(this, 'iwl:file_dialog_start'),
+            file_queued_handler: this.emitSignal.bind(this, 'iwl:file_queue'),
+            file_queue_error_handler: this.emitSignal.bind(this, 'iwl:file_queue_error'),
+            file_dialog_complete_handler: this.emitSignal.bind(this, 'iwl:file_dialog_complete'),
+            upload_start_handler: 
+                function(file) {
+                    this.emitSignal('iwl:upload_start', file);
+                    return true;
+                }.bind(this),
+            upload_progress_handler: this.emitSignal.bind(this, 'iwl:upload_progress'),
+            upload_error_handler: this.emitSignal.bind(this, 'iwl:upload_error'),
+            upload_success_handler: this.emitSignal.bind(this, 'iwl:upload_success'),
+            upload_complete_handler: this.emitSignal.bind(this, 'iwl:upload_complete')
+        }));
+
+        if (this.options.autoUpload) {
+            this.signalConnect('iwl:file_dialog_complete', function() {this.control.startUpload()}.bind(this));
+        } else {
+            this.upload = this.select('.' + className + '_upload')[0];
+            this.upload._uploadStarted = false;
+
+            this.upload.signalConnect('click', function() {
+                buttonToggle.call(this, this.upload._uploadStarted = !this.upload._uploadStarted);
+                this.upload._uploadStarted
+                  ? this.control.startUpload()
+                  : this.control.stopUpload();
+            }.bind(this));
+            this.signalConnect('iwl:file_queue', queueHandler.bind(this));
+            this.signalConnect('iwl:upload_start', uploadStartHandler.bind(this));
+            this.signalConnect('iwl:upload_error', uploadErrorHandler.bind(this));
+            this.signalConnect('iwl:upload_progress', uploadProgressHandler.bind(this));
+        }
+
+        this.signalConnect('iwl:upload_complete', completeHandler.bind(this));
     }
 
     return {
@@ -65,53 +109,8 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
                 for (var i in swfoptions.post_params)
                     swfoptions.post_params[i] = swfoptions.post_params[i].toString();
 
-            this.control = new SWFUpload(Object.extend(swfoptions, {
-                swfupload_loaded_handler: this.emitSignal.bind(this, 'iwl:load'),
-                file_dialog_start_handler: this.emitSignal.bind(this, 'iwl:file_dialog_start'),
-                file_queued_handler: this.emitSignal.bind(this, 'iwl:file_queue'),
-                file_queue_error_handler: this.emitSignal.bind(this, 'iwl:file_queue_error'),
-                file_dialog_complete_handler: this.emitSignal.bind(this, 'iwl:file_dialog_complete'),
-                upload_start_handler: 
-                    function(file) {
-                        this.emitSignal('iwl:upload_start', file);
-                        return true;
-                    }.bind(this),
-                upload_progress_handler: this.emitSignal.bind(this, 'iwl:upload_progress'),
-                upload_error_handler: this.emitSignal.bind(this, 'iwl:upload_error'),
-                upload_success_handler: this.emitSignal.bind(this, 'iwl:upload_success'),
-                upload_complete_handler: this.emitSignal.bind(this, 'iwl:upload_complete')
-            }));
-            this.browse = this.select('.' + className + '_browse')[0];
-
-            if (this.options.autoUpload) {
-                this.signalConnect('iwl:file_dialog_complete', function() {this.control.startUpload()}.bind(this));
-            } else {
-                this.upload = this.select('.' + className + '_upload')[0];
-                this.upload._uploadStarted = false;
-
-                this.upload.signalConnect('click', function() {
-                    buttonToggle.call(this, this.upload._uploadStarted = !this.upload._uploadStarted);
-                    this.upload._uploadStarted
-                      ? this.control.startUpload()
-                      : this.control.stopUpload();
-                }.bind(this));
-                this.signalConnect('iwl:file_queue', queueHandler.bind(this));
-                this.signalConnect('iwl:upload_start', uploadStartHandler.bind(this));
-                this.signalConnect('iwl:upload_error', uploadErrorHandler.bind(this));
-                this.signalConnect('iwl:upload_progress', uploadProgressHandler.bind(this));
-            }
-
-            this.browse.signalConnect('click', function() {
-                this.options.multiple ? this.control.selectFiles() : this.control.selectFile();
-            }.bind(this));
-            this.signalConnect('iwl:upload_complete', completeHandler.bind(this));
-
-            if (DetectFlashVer(9, 0, 0))
-                document.observe('dom:loaded', function() {
-                    this.browse.setDisabled(false);
-                }.bind(this));
-            else {
-                document.observe('dom:loaded', function() {
+            if (!DetectFlashVer(9, 0, 0)) {
+                return document.observe('dom:loaded', function() {
                     this.emitSignal(this, 'iwl:flash_not_found')
                     var info = new Element('span', {className: 'swfupload_missing_flash_plugin'}).update(IWL.SWFUpload.messages.flashErrors.missingPlugin);
                     info.appendChild(new Element('br'));
@@ -123,6 +122,13 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
                     this.insert({after: info});
                 }.bind(this));
             }
+
+            swfoptions.button_action = this.options.multiple ? SWFUpload.BUTTON_ACTION.SELECT_FILES : SWFUpload.BUTTON_ACTION.SELECT_FILE;
+
+            var image = $(swfoptions.button_placeholder_id);
+            if (image.width && image.height)
+                createControl.call(this, swfoptions, image);
+            else image.signalConnect('load', createControl.bind(this, swfoptions, image));
         }
     }
 })());
@@ -169,7 +175,7 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
         images.each(function(column) {
             cell = row.select('.' + className + '_' + column)[0];
             var image = new Element('img', {
-                src: IWL.Config.IMAGE_DIR + '/queue/' + column + '.' + IWL.Config.ICON_EXT,
+                src: IWL.Config.IMAGE_DIR + '/swfupload/queue/' + column + '.' + IWL.Config.ICON_EXT,
                 alt: column,
                 id: id + '_' + column
             });
@@ -231,7 +237,7 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
             row.progress.setValue(complete/total);
     }
 
-    function uploadErrorHandler(event, file, code) {
+    function uploadErrorHandler(event, file, code, message) {
         var row = this.files[file.id].row;
         if (!row || !row.parentNode) return;
         if (row.progress)
@@ -239,7 +245,8 @@ IWL.SWFUpload.Queue = Object.extend(Object.extend({}, IWL.Widget), (function () 
                 ([-280, -290].include(code)
                   ? ''
                   : (IWL.SWFUpload.messages.progress.error + ': ')) +
-                IWL.SWFUpload.messages.uploadErrors[code]
+                IWL.SWFUpload.messages.uploadErrors[code] +
+                (message ? " (" + message + ")" : '')
             );
         if (code == SWFUpload.UPLOAD_ERROR.UPLOAD_STOPPED) {
             if (row.startCell)

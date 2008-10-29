@@ -8,6 +8,7 @@ use strict;
 use base 'IWL::Container';
 
 use IWL::Button;
+use IWL::HBox;
 use IWL::JSON 'toJSON';
 use IWL::String 'randomize';
 use IWL::Config '%IWLConfig';
@@ -346,6 +347,7 @@ sub _realize {
     my $self  = shift;
     my $id    = $self->getId;
 
+    $self->requiredJs(@{$self->{__plugins}});
     $self->SUPER::_realize;
     return $self->_pushFatalError(__"SWFUpload: Upload URL not set!") unless $self->getUploadURL;
 
@@ -383,19 +385,18 @@ sub _realize {
             missingPluginLink => __"Get the Adobe Flash Player",
         }
     };
+    $self->{__SWFOptions}{button_placeholder_id} = $self->{browse}->getId;
     my $swfoptions = toJSON($self->{__SWFOptions});
     my $options = toJSON($self->{_options});
     $messages = toJSON($messages);
     $self->_appendInitScript("IWL.SWFUpload.create('$id', $swfoptions, $options, $messages)");
 
     $self->{upload}->remove if $self->{_options}{autoUpload};
-    $self->requiredJs(@{$self->{__plugins}});
 }
 
 sub _setupDefaultClass {
     my $self = shift;
     $self->prependClass($self->{_defaultClass});
-    $self->{browse}->prependClass($self->{_defaultClass} . '_browse');
     $self->{upload}->prependClass($self->{_defaultClass} . '_upload');
 }
 
@@ -403,25 +404,31 @@ sub _setupDefaultClass {
 #
 $init = sub {
     my ($self, %args) = @_;
-    my $browse = IWL::Button->new;
+    my $browse = IWL::Image->new(id => randomize('swfupload'))->set($IWLConfig{IMAGE_DIR} . '/swfupload/browse.gif');
     my $upload = IWL::Button->new;
+    my $hbox   = IWL::HBox->new;
     
     $self->{_options} = {};
     $self->{_options}{multiple}     = $args{multiple} ? 1 : 0;
     $self->{_options}{autoUpload}   = $args{autoUpload} ? 1 : 0;
     delete @args{qw(multiple autoUpload)};
 
-    $browse->setLabel(__"Browse ...")->setDisabled(1);
-    $upload->setLabel(__"Upload")->setDisabled(1);
-    $self->{browse} = $browse;
-    $self->{upload} = $upload;
-    $self->appendChild($browse, $upload);
     $self->{_defaultClass} = 'swfupload';
     $args{id} ||= randomize($self->{_defaultClass});
 
-    $self->{__SWFOptions} = {flash_url => $IWLConfig{JS_DIR} . '/dist/swfupload_f9.swf'};
+    $upload->setLabel(__"Upload")->setDisabled(1);
+    $self->{browse} = $browse;
+    $self->{upload} = $upload;
+    $hbox->packStart($browse)->appendClass($self->{_defaultClass} . '_browse_container');
+    $hbox->packStart($upload);
+    $self->appendChild($hbox);
+
+    $self->{__SWFOptions} = {
+        flash_url => $IWLConfig{JS_DIR} . '/dist/swfupload.swf',
+        button_image_url => $IWLConfig{IMAGE_DIR} . '/swfupload/browse.gif',
+    };
     $self->{__plugins} = [];
-    $self->requiredJs('base.js', 'dist/swfupload.js', 'dist/AC_OETags.js', 'swfupload.js');
+    $self->require(js => ['base.js', 'dist/swfupload.js', 'dist/AC_OETags.js', 'swfupload.js'], css => 'swfupload.css');
     $self->_constructorArguments(%args);
     $self->{_customSignals} = {
         load => [],
