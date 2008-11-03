@@ -53,7 +53,7 @@ If true, file uploading starts as soon as the files are selected. An upload/stop
 
 The button window mode for the flash plugin. Can be one of:
 
-=item 4
+=over 4
 
 =item B<window>
 
