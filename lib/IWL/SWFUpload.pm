@@ -49,6 +49,20 @@ If true, the invoked file selector can pick multiple files. Defaults to I<false>
 
 If true, file uploading starts as soon as the files are selected. An upload/stop button is never placed on the page.
 
+=item B<buttonWindowMode>
+
+The button window mode for the flash plugin. Can be one of:
+
+=item 4
+
+=item B<window>
+
+=item B<transparent> (I<default>)
+
+=item B<opaque>
+
+=back
+
 =back
 
 =head1 PROPERTIES 
@@ -407,11 +421,13 @@ $init = sub {
     my $browse = IWL::Image->new(id => randomize('swfupload'))->set($IWLConfig{IMAGE_DIR} . '/swfupload/browse.gif');
     my $upload = IWL::Button->new;
     my $hbox   = IWL::HBox->new;
+    my $buttonWindowMode;
     
+    $buttonWindowMode = $args{buttonWindowMode} || "transparent";
     $self->{_options} = {};
     $self->{_options}{multiple}     = $args{multiple} ? 1 : 0;
     $self->{_options}{autoUpload}   = $args{autoUpload} ? 1 : 0;
-    delete @args{qw(multiple autoUpload)};
+    delete @args{qw(multiple autoUpload buttonWindowMode)};
 
     $self->{_defaultClass} = 'swfupload';
     $args{id} ||= randomize($self->{_defaultClass});
@@ -426,6 +442,7 @@ $init = sub {
     $self->{__SWFOptions} = {
         flash_url => $IWLConfig{JS_DIR} . '/dist/swfupload.swf',
         button_image_url => $IWLConfig{IMAGE_DIR} . '/swfupload/browse.gif',
+        button_window_mode => $buttonWindowMode,
     };
     $self->{__plugins} = [];
     $self->require(js => ['base.js', 'dist/swfupload.js', 'dist/AC_OETags.js', 'swfupload.js'], css => 'swfupload.css');
