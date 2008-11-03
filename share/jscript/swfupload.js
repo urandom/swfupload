@@ -104,11 +104,6 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
 
             var className = $A(this.classNames()).first();
 
-            // This is fixed in SWFUpload 2.1.0, and should be removed once ported to this version
-            if (swfoptions.post_params && Object.isObject(swfoptions.post_params))
-                for (var i in swfoptions.post_params)
-                    swfoptions.post_params[i] = swfoptions.post_params[i].toString();
-
             if (!DetectFlashVer(9, 0, 0)) {
                 return document.observe('dom:loaded', function() {
                     this.emitSignal(this, 'iwl:flash_not_found')
@@ -124,6 +119,7 @@ IWL.SWFUpload = Object.extend(Object.extend({}, IWL.Widget), (function () {
             }
 
             swfoptions.button_action = this.options.multiple ? SWFUpload.BUTTON_ACTION.SELECT_FILES : SWFUpload.BUTTON_ACTION.SELECT_FILE;
+            swfoptions.button_cursor = SWFUpload.CURSOR.HAND;
 
             var image = $(swfoptions.button_placeholder_id);
             if (image.width && image.height)
